@@ -14,7 +14,7 @@ inputs:
   publish_dir:
     description: 'Directory to publish'
     required: false
-    default: './'
+    default: './' # Publish the root directory
   publish_branch:
     description: 'Branch to deploy to'
     required: false
@@ -69,8 +69,8 @@ runs:
         set -e
         echo "Building website with downloaded Krems..."
         ./krems --build 
-        echo "Website built. Contents of root directory:"
-        ls -la
+        echo "Website built. Contents of root directory:" # Check root directory contents
+        ls -la # List root directory contents
 
     - name: Generate CNAME file for custom domain
       shell: bash
@@ -98,11 +98,11 @@ runs:
         
         if [ -n "$DOMAIN_FOR_CNAME" ]; then
           echo "Custom domain for CNAME detected: $DOMAIN_FOR_CNAME"
-          echo "$DOMAIN_FOR_CNAME" > CNAME
+          echo "$DOMAIN_FOR_CNAME" > CNAME # CNAME in root
           echo "CNAME file created in root with content: $DOMAIN_FOR_CNAME"
         else
           echo "Not a custom domain or URL not parsable for CNAME. No CNAME file generated. Removing if exists."
-          rm -f CNAME
+          rm -f CNAME # Remove CNAME from root if exists
         fi
 
     - name: Deploy to gh-pages branch
