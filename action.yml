@@ -1,0 +1,115 @@
+name: 'Build and Deploy Krems Site'
+description: 'Downloads Krems, builds a static site, and deploys to GitHub Pages'
+author: 'Your Name'
+
+branding:
+  icon: 'globe'
+  color: 'blue'
+
+inputs:
+  github_token:
+    description: 'GitHub token for deployment'
+    required: false
+    default: ${{ github.token }}
+  publish_dir:
+    description: 'Directory to publish'
+    required: false
+    default: './'
+  publish_branch:
+    description: 'Branch to deploy to'
+    required: false
+    default: 'gh-pages'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download latest Krems release
+      shell: bash
+      run: |
+        LATEST_KREMS_URL="https://github.com/mreider/krems/releases/latest/download/krems-linux-amd64"
+        echo "Downloading Krems from $LATEST_KREMS_URL"
+        curl -LfsS -o krems "$LATEST_KREMS_URL"
+        if [ ! -s krems ] || ! file krems | grep -q "executable"; then
+          echo "Error: Downloaded krems file is empty or not an executable."
+          echo "Contents of downloaded file (first 10 lines):"
+          head -n 10 krems
+          exit 1
+        fi
+        chmod +x ./krems
+        echo "Krems version from downloaded release: $(./krems --version || echo 'version flag not supported or krems not executable')"
+
+    - name: Configure Git User
+      shell: bash
+      run: |
+        git config user.name "GitHub Action Bot"
+        git config user.email "actions@github.com"
+
+    - name: Workaround - Align devPath with basePath in config.yaml
+      shell: bash
+      run: |
+        if [ ! -f config.yaml ]; then
+          echo "config.yaml not found, skipping devPath alignment."
+          exit 0
+        fi
+        echo "Attempting to align devPath with basePath in config.yaml..."
+        BASE_PATH_VALUE=$(grep '^  basePath:' config.yaml | sed -E "s/^  basePath: *['\"]?([^'\"]*)['\"]?/\1/")
+
+        if [ -z "$BASE_PATH_VALUE" ]; then
+          echo "Could not extract basePath from config.yaml. Skipping devPath alignment."
+        else
+          echo "Extracted basePath: $BASE_PATH_VALUE"
+          sed "s|^  devPath:.*|  devPath: \"${BASE_PATH_VALUE}\"|" config.yaml > config.yaml.tmp && mv config.yaml.tmp config.yaml
+          echo "Updated config.yaml with devPath aligned to basePath:"
+          grep "devPath:" config.yaml || echo "devPath line not found after update attempt."
+        fi
+        
+    - name: Run Krems to build website
+      shell: bash
+      run: |
+        set -e
+        echo "Building website with downloaded Krems..."
+        ./krems --build 
+        echo "Website built. Contents of root directory:"
+        ls -la
+
+    - name: Generate CNAME file for custom domain
+      shell: bash
+      run: |
+        set -e
+        if [ ! -f config.yaml ]; then
+          echo "config.yaml not found, skipping CNAME generation."
+          exit 0
+        fi
+
+        WEBSITE_LINE=$(grep '^  url:' config.yaml || echo "")
+        BASEPATH_LINE=$(grep '^  basePath:' config.yaml || echo "")
+
+        WEBSITE_URL_FROM_CONFIG=$(echo "$WEBSITE_LINE" | sed -n 's/  url: "\(.*\)"/\1/p')
+        if [ -z "$WEBSITE_URL_FROM_CONFIG" ]; then WEBSITE_URL_FROM_CONFIG=$(echo "$WEBSITE_LINE" | sed -n "s/  url: '\(.*\)'/\1/p"); fi
+        if [ -z "$WEBSITE_URL_FROM_CONFIG" ]; then WEBSITE_URL_FROM_CONFIG=$(echo "$WEBSITE_LINE" | sed -n 's/  url: \(.*\)/\1/p'); fi
+
+        DOMAIN_FOR_CNAME=""
+        if [[ "$WEBSITE_URL_FROM_CONFIG" == "http"* ]]; then
+          TEMP_DOMAIN=$(echo "$WEBSITE_URL_FROM_CONFIG" | sed -e 's|^https\?://||' -e 's|/.*$||')
+          if [[ "$TEMP_DOMAIN" != *".github.io"* ]]; then
+            DOMAIN_FOR_CNAME=$TEMP_DOMAIN
+          fi
+        fi
+        
+        if [ -n "$DOMAIN_FOR_CNAME" ]; then
+          echo "Custom domain for CNAME detected: $DOMAIN_FOR_CNAME"
+          echo "$DOMAIN_FOR_CNAME" > CNAME
+          echo "CNAME file created in root with content: $DOMAIN_FOR_CNAME"
+        else
+          echo "Not a custom domain or URL not parsable for CNAME. No CNAME file generated. Removing if exists."
+          rm -f CNAME
+        fi
+
+    - name: Deploy to gh-pages branch
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ inputs.github_token }}
+        publish_dir: ${{ inputs.publish_dir }}
+        publish_branch: ${{ inputs.publish_branch }}
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
