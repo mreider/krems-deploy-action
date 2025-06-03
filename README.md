@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build and Deploy with Krems
-        uses: your-username/krems-deploy-action@v1
+        uses: mreider/krems-deploy-action@v1
         with:
           publish_dir: './'
           publish_branch: 'gh-pages'
