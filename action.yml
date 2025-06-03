@@ -93,7 +93,7 @@ runs:
         # now handles CNAME creation within its output directory (./tmp/CNAME)
         # based on the config.yaml.
         echo "CNAME generation is now handled by the krems binary itself."
-        fi
+        # The extraneous 'fi' was here and has been removed. The 'if [ ! -f config.yaml ]' is the main 'if' for this block.
 
     - name: Deploy to gh-pages branch
       uses: peaceiris/actions-gh-pages@v4
