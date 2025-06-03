@@ -99,7 +99,7 @@ runs:
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ inputs.github_token }}
-        publish_dir: ./tmp # Hardcoded to publish the 'tmp' directory
+        publish_dir: ./.tmp # Changed to publish the './.tmp' directory
         publish_branch: gh-pages # Hardcoded to deploy to 'gh-pages'
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
