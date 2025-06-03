@@ -11,14 +11,7 @@ inputs:
     description: 'GitHub token for deployment'
     required: false
     default: ${{ github.token }}
-  publish_dir:
-    description: 'Directory to publish'
-    required: false
-    default: './' # Publish the root directory
-  publish_branch:
-    description: 'Branch to deploy to'
-    required: false
-    default: 'gh-pages'
+# publish_dir and publish_branch are now hardcoded below
 
 runs:
   using: 'composite'
@@ -96,21 +89,18 @@ runs:
           fi
         fi
         
-        if [ -n "$DOMAIN_FOR_CNAME" ]; then
-          echo "Custom domain for CNAME detected: $DOMAIN_FOR_CNAME"
-          echo "$DOMAIN_FOR_CNAME" > CNAME # CNAME in root
-          echo "CNAME file created in root with content: $DOMAIN_FOR_CNAME"
-        else
-          echo "Not a custom domain or URL not parsable for CNAME. No CNAME file generated. Removing if exists."
-          rm -f CNAME # Remove CNAME from root if exists
+        # This CNAME generation logic is removed because the krems binary
+        # now handles CNAME creation within its output directory (./tmp/CNAME)
+        # based on the config.yaml.
+        echo "CNAME generation is now handled by the krems binary itself."
         fi
 
     - name: Deploy to gh-pages branch
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ inputs.github_token }}
-        publish_dir: ${{ inputs.publish_dir }}
-        publish_branch: ${{ inputs.publish_branch }}
+        publish_dir: ./tmp # Hardcoded to publish the 'tmp' directory
+        publish_branch: gh-pages # Hardcoded to deploy to 'gh-pages'
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
         allow_empty_commit: true # Temporarily add for debugging
