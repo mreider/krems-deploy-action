@@ -1,2 +1,38 @@
 # krems-deploy-action
-Build and Deploy Krems Site
+
+Builds and deploys static sites using [Krems](https://github.com/mreider/krems) to GitHub Pages.
+
+## Usage
+
+```yaml
+name: Deploy Krems Site
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build and Deploy with Krems
+        uses: your-username/krems-deploy-action@v1
+        with:
+          publish_dir: './'
+          publish_branch: 'gh-pages'
+```
+
+## Requirements
+
+- Repository must contain a config.yaml file for Krems configuration
+- GitHub Pages must be enabled for the repository
+
