@@ -113,3 +113,4 @@ runs:
         publish_branch: ${{ inputs.publish_branch }}
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
+        allow_empty_commit: true # Temporarily add for debugging
